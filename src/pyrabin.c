@@ -51,33 +51,6 @@ static void to_hex_digest(char* digest, char* hex_digest) {
   hex_digest[2 * SHA_DIGEST_LENGTH] = 0;
 }
 
-static PyObject* create_list_from_fingerprints(struct rabin_polynomial* curr) {
-  PyObject* list = NULL;
-  PyObject* tuple = NULL;
-  PyObject* node = NULL;
-
-  if (!(list = PyList_New(0))) {
-    return NULL;
-  }
-
-  while (curr) {
-    if (!(tuple = PyTuple_New(3))) {
-      return NULL;
-    }
-    node = Py_BuildValue("K", curr->start);
-    PyTuple_SetItem(tuple, 0, node);
-    node = Py_BuildValue("K", curr->length);
-    PyTuple_SetItem(tuple, 1, node);
-    node = Py_BuildValue("K", curr->polynomial);
-    PyTuple_SetItem(tuple, 2, node);
-    PyList_Append(list, tuple);
-    Py_DECREF(tuple);
-    curr = curr->next_polynomial;
-  }
-
-  return list;
-}
-
 static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
     PyObject *keywds) {
   const char *filename;
