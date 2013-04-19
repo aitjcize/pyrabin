@@ -102,7 +102,30 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
     return NULL;
   }
 
-  PyObject* list = create_list_from_fingerprints(head);
+  PyObject* list = NULL;
+  PyObject* tuple = NULL;
+  PyObject* node = NULL;
+
+  if (!(list = PyList_New(0))) {
+    return NULL;
+  }
+
+  struct rabin_polynomial* curr = head;
+  while (curr) {
+    if (!(tuple = PyTuple_New(3))) {
+      return NULL;
+    }
+    node = Py_BuildValue("K", curr->start);
+    PyTuple_SetItem(tuple, 0, node);
+    node = Py_BuildValue("K", curr->length);
+    PyTuple_SetItem(tuple, 1, node);
+    node = Py_BuildValue("K", curr->polynomial);
+    PyTuple_SetItem(tuple, 2, node);
+    PyList_Append(list, tuple);
+    Py_DECREF(tuple);
+    curr = curr->next_polynomial;
+  }
+
   free_rabin_fingerprint_list(head);
   fclose(fp);
 
@@ -141,6 +164,14 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args,
   char digest[SHA_DIGEST_LENGTH];
   char hex_digest[SHA_DIGEST_LENGTH * 2 + 5];
   SHA_CTX ctx;
+
+  PyObject* list = NULL;
+  PyObject* tuple = NULL;
+  PyObject* node = NULL;
+
+  if (!(list = PyList_New(0))) {
+    return NULL;
+  }
 
   while (curr) {
     if ((offset = fseek(fp, curr->start, SEEK_SET) == -1)) {
@@ -186,10 +217,23 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args,
     strncat(hex_digest, ".blk", SHA_DIGEST_LENGTH * 2 + 5);
     rename(outfile, hex_digest);
 
+    if (!(tuple = PyTuple_New(4))) {
+      return NULL;
+    }
+    node = Py_BuildValue("K", curr->start);
+    PyTuple_SetItem(tuple, 0, node);
+    node = Py_BuildValue("K", curr->length);
+    PyTuple_SetItem(tuple, 1, node);
+    node = Py_BuildValue("K", curr->polynomial);
+    PyTuple_SetItem(tuple, 2, node);
+    node = Py_BuildValue("s", hex_digest);
+    PyTuple_SetItem(tuple, 3, node);
+    PyList_Append(list, tuple);
+    Py_DECREF(tuple);
+
     curr = curr->next_polynomial;
   }
 
-  PyObject* list = create_list_from_fingerprints(head);
   free_rabin_fingerprint_list(head);
   fclose(fp);
 
