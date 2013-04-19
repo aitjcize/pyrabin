@@ -39,11 +39,11 @@
 //to the Rabin Fingerprinting algorithm
 
 #ifndef RAB_MAX_BLOCK_SIZE
-#define RAB_MAX_BLOCK_SIZE 4096
+#define RAB_MAX_BLOCK_SIZE (64 * 1024)
 #endif
 
 #ifndef RAB_MIN_BLOCK_SIZE
-#define RAB_MIN_BLOCK_SIZE 32
+#define RAB_MIN_BLOCK_SIZE (2 * 1024)
 #endif
 
 #ifndef RAB_POLYNOMIAL_REM
@@ -51,11 +51,11 @@
 #endif
 
 #ifndef RAB_POLYNOMIAL_AVG_BLOCK_SIZE
-#define RAB_POLYNOMIAL_AVG_BLOCK_SIZE  64
+#define RAB_POLYNOMIAL_AVG_BLOCK_SIZE  (4 * 1024)
 #endif
 
 #ifndef RAB_POLYNOMIAL_WIN_SIZE
-#define RAB_POLYNOMIAL_WIN_SIZE 31
+#define RAB_POLYNOMIAL_WIN_SIZE 48
 #endif
 
 #ifndef RAB_POLYNOMIAL_MIN_WIN_SIZE
