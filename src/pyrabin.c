@@ -67,7 +67,7 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
     return NULL;
   } 
 
-  while (curr->next_polynomial) {
+  while (curr) {
     if (!(tuple = PyTuple_New(3))) {
       return NULL;
     }
