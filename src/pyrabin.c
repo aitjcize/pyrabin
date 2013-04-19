@@ -59,7 +59,8 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
     return NULL;
   }
 
-  struct rabin_polynomial* curr = get_file_rabin_polys(fp);
+  struct rabin_polynomial* head = get_file_rabin_polys(fp);
+  struct rabin_polynomial* curr = head;
 
   if (curr == NULL) {
     PyErr_SetString(RabinError, "get_file_rabin_polys()");
@@ -80,6 +81,8 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
     Py_DECREF(tuple);
     curr = curr->next_polynomial;
   }
+
+  free_rabin_fingerprint_list(head);
 
   return list;
 }

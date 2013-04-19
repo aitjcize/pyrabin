@@ -86,7 +86,7 @@ void print_rabin_poly_to_file(FILE *out_file, struct rabin_polynomial *poly, int
 /*
  * Initialize the algorithm with the default params.
  */
-int initialize_rabin_polynomial_defaults()
+static int initialize_rabin_polynomial_defaults()
 {
   if (rabin_poly_init_completed != 0)
     return 1; //Nothing to do
@@ -131,7 +131,7 @@ void change_average_rabin_block_size(int increment_mode)
 /**
  * Initalizes the algorithm with the provided paramters
  */
-int initialize_rabin_polynomial(uint64_t prime, unsigned max_size, unsigned int min_size, unsigned int average_block_size)
+static int initialize_rabin_polynomial(uint64_t prime, unsigned max_size, unsigned int min_size, unsigned int average_block_size)
 {
   rabin_polynomial_prime = prime;
   rabin_polynomial_max_block_size = max_size;

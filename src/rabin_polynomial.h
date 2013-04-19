@@ -90,9 +90,6 @@ void free_rabin_fingerprint_list(struct rabin_polynomial *head);
 
 struct rabin_polynomial *gen_new_polynomial(struct rabin_polynomial *tail, uint64_t total_len, uint16_t length, uint64_t rab_sum);
 
-int initialize_rabin_polynomial_defaults();
-int initialize_rabin_polynomial(uint64_t prime, unsigned max_size, unsigned int min_size, unsigned int average_block_size);
-
 void print_rabin_poly_to_file(FILE *out_file, struct rabin_polynomial *poly, int new_line);
 void print_rabin_poly_list_to_file(FILE *out_file, struct rabin_polynomial *poly);
 
