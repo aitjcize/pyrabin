@@ -92,12 +92,6 @@ struct rabin_polynomial *gen_new_polynomial(struct rabin_polynomial *tail, uint6
 
 void print_rabin_poly_to_file(FILE *out_file, struct rabin_polynomial *poly, int new_line);
 void print_rabin_poly_list_to_file(FILE *out_file, struct rabin_polynomial *poly);
-
-/*
- * Reads the block given, continuing using the info given in rab_block
- */
-struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block);
-
 struct rabin_polynomial *get_file_rabin_polys(FILE *file_to_read);
 
 #endif

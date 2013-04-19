@@ -55,6 +55,10 @@ int rabin_poly_init_completed = 0;
 
 uint64_t *polynomial_lookup_buf;
 
+static struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block);
+static int initialize_rabin_polynomial_defaults();
+static int initialize_rabin_polynomial(uint64_t prime, unsigned max_size, unsigned int min_size, unsigned int average_block_size);
+
 /**
  * Prints the list of rabin polynomials to the given file
  */
@@ -294,7 +298,7 @@ struct rab_block_info *init_empty_block() {
  * Since most of the time we will not end on a border, the function returns
  * a block struct, which keeps track of the current blocksum and rolling checksum
  */
-struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block) {
+static struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block) {
   struct rab_block_info *block;
 
   if (cur_block == NULL) {
