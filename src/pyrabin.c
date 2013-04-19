@@ -21,9 +21,13 @@
  */
 
 #include <stdio.h>
+
 #include <Python.h>
+#include <openssl/sha.h>
 
 #include "rabin_polynomial.h"
+
+#define READ_BUF_SIZE 1048576
 
 static PyObject* RabinError;
 
@@ -32,6 +36,47 @@ extern unsigned int rabin_sliding_window_size;
 extern unsigned int rabin_polynomial_max_block_size;
 extern unsigned int rabin_polynomial_min_block_size;
 extern unsigned int rabin_polynomial_average_block_size;
+
+static void to_hex_digest(char* digest, char* hex_digest) {
+  int i, j;
+  for(i = j = 0; i < SHA_DIGEST_LENGTH; ++i) {
+    char c;
+    c = (digest[i] >> 4) & 0xf;
+    c = (c > 9) ? c + 'a'- 10 : c + '0';
+    hex_digest[j++] = c;
+    c = (digest[i] & 0xf);
+    c = (c > 9) ? c + 'a' - 10 : c + '0';
+    hex_digest[j++] = c;
+  }
+  hex_digest[2 * SHA_DIGEST_LENGTH] = 0;
+}
+
+static PyObject* create_list_from_fingerprints(struct rabin_polynomial* curr) {
+  PyObject* list = NULL;
+  PyObject* tuple = NULL;
+  PyObject* node = NULL;
+
+  if (!(list = PyList_New(0))) {
+    return NULL;
+  }
+
+  while (curr) {
+    if (!(tuple = PyTuple_New(3))) {
+      return NULL;
+    }
+    node = Py_BuildValue("K", curr->start);
+    PyTuple_SetItem(tuple, 0, node);
+    node = Py_BuildValue("K", curr->length);
+    PyTuple_SetItem(tuple, 1, node);
+    node = Py_BuildValue("K", curr->polynomial);
+    PyTuple_SetItem(tuple, 2, node);
+    PyList_Append(list, tuple);
+    Py_DECREF(tuple);
+    curr = curr->next_polynomial;
+  }
+
+  return list;
+}
 
 static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
     PyObject *keywds) {
@@ -51,45 +96,111 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
     return PyErr_SetFromErrnoWithFilename(RabinError, filename);
   }
 
-  PyObject* list = NULL;
-  PyObject* tuple = NULL;
-  PyObject* node = NULL;
-
-  if (!(list = PyList_New(0))) {
+  struct rabin_polynomial* head = get_file_rabin_polys(fp);
+  if (head == NULL) {
+    PyErr_SetString(RabinError, "get_file_rabin_polys()");
     return NULL;
+  }
+
+  PyObject* list = create_list_from_fingerprints(head);
+  free_rabin_fingerprint_list(head);
+  fclose(fp);
+
+  return list;
+}
+
+static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args,
+    PyObject *keywds) {
+  const char *filename;
+  static char *kwlist[] = {"filename", "prime", "window_size", "max_block_size",
+    "min_block_size", "avg_block_size", NULL};
+
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|KIIII", kwlist,
+     &filename, &rabin_polynomial_prime, &rabin_sliding_window_size,
+     &rabin_polynomial_max_block_size, &rabin_polynomial_min_block_size,
+     &rabin_polynomial_average_block_size)) {
+    return NULL;
+  }
+
+  FILE* fp = fopen(filename, "r");
+  if (!fp) {
+    return PyErr_SetFromErrnoWithFilename(RabinError, filename);
   }
 
   struct rabin_polynomial* head = get_file_rabin_polys(fp);
-  struct rabin_polynomial* curr = head;
-
-  if (curr == NULL) {
+  if (head == NULL) {
     PyErr_SetString(RabinError, "get_file_rabin_polys()");
     return NULL;
-  } 
+  }
+
+  struct rabin_polynomial* curr = head;
+  char outfile[BUFSIZ];
+  char* buffer = malloc(READ_BUF_SIZE);
+  uint64_t offset = 0;
+  size_t read_size = 0;
+  char digest[SHA_DIGEST_LENGTH];
+  char hex_digest[SHA_DIGEST_LENGTH * 2 + 5];
+  SHA_CTX ctx;
 
   while (curr) {
-    if (!(tuple = PyTuple_New(3))) {
-      return NULL;
+    if ((offset = fseek(fp, curr->start, SEEK_SET) == -1)) {
+      fclose(fp);
+      return PyErr_SetFromErrnoWithFilename(RabinError, filename);
     }
-    node = Py_BuildValue("K", curr->start);
-    PyTuple_SetItem(tuple, 0, node);
-    node = Py_BuildValue("K", curr->length);
-    PyTuple_SetItem(tuple, 1, node);
-    node = Py_BuildValue("K", curr->polynomial);
-    PyTuple_SetItem(tuple, 2, node);
-    PyList_Append(list, tuple);
-    Py_DECREF(tuple);
+
+    /* Save chunk to temporarily file */
+    snprintf(outfile, BUFSIZ, ".%x.tmp", curr->polynomial);
+    SHA1_Init(&ctx);
+    FILE* ofp = fopen(outfile, "w");
+    if (!ofp) {
+      fclose(fp);
+      return PyErr_SetFromErrnoWithFilename(RabinError, filename);
+    }
+
+    size_t remain_read = curr->length;
+    size_t bytes_read = 0;
+
+    do {
+      read_size = (curr->length < READ_BUF_SIZE)? curr->length: READ_BUF_SIZE;
+      bytes_read = fread(buffer, 1, read_size, fp);
+      SHA1_Update(&ctx, buffer, bytes_read);
+
+      size_t total_written = 0;
+      size_t bytes_written = 0;
+      do {
+        bytes_written = fwrite(buffer, 1, read_size, ofp);
+        if (bytes_written == 0 && ferror(ofp)) {
+          fclose(fp);
+          fclose(ofp);
+          return PyErr_SetFromErrnoWithFilename(RabinError, outfile);
+        }
+        total_written += bytes_written;
+      } while (total_written != bytes_read);
+      remain_read -= bytes_read;
+    } while (remain_read > 0);
+    fclose(ofp);
+
+    /* Rename chunk using SHA-1 sum as filename */
+    SHA1_Final(digest, &ctx);
+    to_hex_digest(digest, hex_digest);
+    strncat(hex_digest, ".blk", SHA_DIGEST_LENGTH * 2 + 5);
+    rename(outfile, hex_digest);
+
     curr = curr->next_polynomial;
   }
 
+  PyObject* list = create_list_from_fingerprints(head);
   free_rabin_fingerprint_list(head);
+  fclose(fp);
 
   return list;
 }
 
 static PyMethodDef PyRabinMethods[] = {
   {"get_file_fingerprints", get_file_fingerprints,
-    METH_VARARGS | METH_KEYWORDS, "Get Rabin fingerprint of file"},
+    METH_VARARGS | METH_KEYWORDS, "Get Rabin fingerprint of a file"},
+  {"split_file_by_fingerprints", split_file_by_fingerprints,
+    METH_VARARGS | METH_KEYWORDS, "Split a file by fingerprints"},
   {NULL, NULL, 0, NULL}     
 };
 
