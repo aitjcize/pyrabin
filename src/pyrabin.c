@@ -45,6 +45,7 @@ static PyObject* set_prime(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "K", &rabin_polynomial_prime)) {
     return NULL;
   }
+  return Py_None;
 }
 
 static PyObject* set_window_size(PyObject* self, PyObject* args)
@@ -52,6 +53,7 @@ static PyObject* set_window_size(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "I", &rabin_sliding_window_size)) {
     return NULL;
   }
+  return Py_None;
 }
 
 static PyObject* set_max_block_size(PyObject* self, PyObject* args)
@@ -59,6 +61,7 @@ static PyObject* set_max_block_size(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "I", &rabin_polynomial_max_block_size)) {
     return NULL;
   }
+  return Py_None;
 }
 
 static PyObject* set_min_block_size(PyObject* self, PyObject* args)
@@ -66,16 +69,27 @@ static PyObject* set_min_block_size(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "I", &rabin_polynomial_min_block_size)) {
     return NULL;
   }
+  return Py_None;
 }
 
 static PyObject* set_average_block_size(PyObject* self, PyObject* args)
 {
-  if (!PyArg_ParseTuple(args, "I", &rabin_polynomial_average_block_size)) {
+  unsigned int prev;
+  if (!PyArg_ParseTuple(args, "I", &prev)) {
     return NULL;
   }
+  if (prev < rabin_polynomial_min_block_size ||
+      prev > rabin_polynomial_max_block_size) {
+    PyErr_SetString(RabinError,
+        "average block size should between min and max block size");
+    return NULL;
+  }
+  rabin_polynomial_average_block_size = prev;
+  return Py_None;
 }
 
-static void to_hex_digest(char* digest, char* hex_digest) {
+static void to_hex_digest(char* digest, char* hex_digest)
+{
   int i, j;
   for(i = j = 0; i < SHA_DIGEST_LENGTH; ++i) {
     char c;
@@ -89,8 +103,8 @@ static void to_hex_digest(char* digest, char* hex_digest) {
   hex_digest[2 * SHA_DIGEST_LENGTH] = 0;
 }
 
-static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
-    PyObject *keywds) {
+static PyObject* get_file_fingerprints(PyObject* self, PyObject* args)
+{
   const char *filename;
 
   if (!PyArg_ParseTuple(args, "s", &filename)) {
@@ -115,8 +129,8 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
   return list;
 }
 
-static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args,
-    PyObject *keywds) {
+static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
+{
   const char *filename;
   if (!PyArg_ParseTuple(args, "s", &filename)) {
     return NULL;
@@ -219,10 +233,22 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args,
 }
 
 static PyMethodDef PyRabinMethods[] = {
+  {"set_prime", (PyCFunction)set_prime,
+    METH_VARARGS, "Set Rabin polynomial prime"},
+  {"set_window_size", (PyCFunction)set_window_size,
+    METH_VARARGS, "Set Rabin polynomial sliding window size"},
+  {"set_max_block_size", (PyCFunction)set_max_block_size,
+    METH_VARARGS, "Set Rabin polynomial max block size"},
+  {"set_min_block_size", (PyCFunction)set_min_block_size,
+    METH_VARARGS, "Set Rabin polynomial min block size"},
+  {"set_average_block_size", (PyCFunction)set_average_block_size,
+    METH_VARARGS, "Set Rabin polynomial average block size"},
   {"get_file_fingerprints", (PyCFunction)get_file_fingerprints,
-    METH_VARARGS | METH_KEYWORDS, "Get Rabin fingerprint of a file"},
+    METH_VARARGS, "Get Rabin fingerprint of a file"},
+  {"get_file_fingerprints", (PyCFunction)get_file_fingerprints,
+    METH_VARARGS, "Get Rabin fingerprint of a file"},
   {"split_file_by_fingerprints", (PyCFunction)split_file_by_fingerprints,
-    METH_VARARGS | METH_KEYWORDS, "Split a file by fingerprints"},
+    METH_VARARGS, "Split a file by fingerprints"},
   {NULL, NULL, 0, NULL}     
 };
 

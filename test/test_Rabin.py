@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
-from rabin import Rabin, get_file_fingerprints
+from rabin import Rabin, get_file_fingerprints, set_min_block_size, set_max_block_size, set_average_block_size
 
 TARGET = 'test.bin'
+
+set_min_block_size(1024)
+set_max_block_size(2048)
+set_average_block_size(1024)
 
 r = Rabin()
 
@@ -15,4 +19,5 @@ with open(TARGET, 'r') as f:
 partial = r.fingerprints()
 gold = get_file_fingerprints(TARGET)
 
+print gold
 print partial == gold
