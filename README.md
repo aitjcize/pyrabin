@@ -9,11 +9,29 @@ The C extension implementation is based on [rabin-fingerprint-c](https://code.go
 * Window/Chunk size is configurable.
 
 ## API
-* `get_file_fingerprints(filename, prime=3, window_size=48, max_block_size=65536, min_block_size=2048, avg_block_size=4096)`
+### Module methods
+* `set_prime(integer)`
+  - Set Rabin polynomial prime
+* `set_window_size(integer)`
+  - Set Rabin polynomial sliding window size
+* `set_max_block_size(integer)`
+  - Set Rabin polynomial max block size
+* `set_min_block_size(integer)`
+  - Set Rabin polynomial min block size
+* `set_average_block_size(integer)`
+  - Set Rabin polynomial average block size
+* `get_file_fingerprints(filename)`
   - Returns a list of tupple, each tuple represents (offset, length, fingerprint) 
-* `split_file_by_fingerprints(filename, prime=3, window_size=48, max_block_size=65536, min_block_size=2048, avg_block_size=4096)`
+* `split_file_by_fingerprints(filename)`
   - Returns a list of tupple, each tuple represents (offset, length, fingerprint, filename).
   - The default filename is sha1sum of the chunk with '.blk' suffix.
+### class Rabin
+* `update(data)`
+  - Update Rabin fingerprint list by adding a block of data
+* `clear()`
+  - Clear fingerprints and reset status
+* `fingerprints()`
+  - Return fingerprints of all data passed by the update method
 
 ## Examples
 * See test/test.sh for example
