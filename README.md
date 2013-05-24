@@ -25,6 +25,7 @@ The C extension implementation is based on [rabin-fingerprint-c](https://code.go
 * `split_file_by_fingerprints(filename)`
   - Returns a list of tupple, each tuple represents (offset, length, fingerprint, filename).
   - The default filename is sha1sum of the chunk with '.blk' suffix.
+
 ### class Rabin
 * `update(data)`
   - Update Rabin fingerprint list by adding a block of data
