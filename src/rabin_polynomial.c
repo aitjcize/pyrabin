@@ -55,8 +55,6 @@ int rabin_poly_init_completed = 0;
 
 uint64_t *polynomial_lookup_buf;
 
-static struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block);
-static int initialize_rabin_polynomial_defaults();
 static int initialize_rabin_polynomial(uint64_t prime, unsigned max_size, unsigned int min_size, unsigned int average_block_size);
 
 /**
@@ -90,7 +88,7 @@ void print_rabin_poly_to_file(FILE *out_file, struct rabin_polynomial *poly, int
 /*
  * Initialize the algorithm with the default params.
  */
-static int initialize_rabin_polynomial_defaults()
+int initialize_rabin_polynomial_defaults()
 {
   if (rabin_poly_init_completed != 0)
     return 1; //Nothing to do
@@ -250,8 +248,6 @@ struct rabin_polynomial *get_file_rabin_polys(FILE *file_to_read) {
     bytes_read = fread(file_data, 1, RAB_FILE_READ_BUF_SIZE, file_to_read);
   }
 
-  block->tail->start = block->total_bytes_read - block->tail->length;
-
   free(file_data);
   struct rabin_polynomial *head = block->head;
   free(block);
@@ -300,7 +296,7 @@ struct rab_block_info *init_empty_block() {
  * Since most of the time we will not end on a border, the function returns
  * a block struct, which keeps track of the current blocksum and rolling checksum
  */
-static struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block) {
+struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block) {
   struct rab_block_info *block;
 
   if (cur_block == NULL) {
@@ -347,6 +343,7 @@ static struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct r
         block->current_poly_finished = 1;
     }
   }
+  block->tail->start = block->total_bytes_read - block->tail->length;
 
   return block;
 }

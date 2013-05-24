@@ -83,6 +83,9 @@ struct rab_block_info {
   uint64_t curr_roll_offset;
 };
 
+int initialize_rabin_polynomial_defaults();
+struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block);
+
 void change_average_rabin_block_size(int increment_mode);
 int write_rabin_fingerprints_to_binary_file(FILE *file, struct rabin_polynomial *head);
 struct rabin_polynomial *read_rabin_polys_from_file_binary(FILE *file);

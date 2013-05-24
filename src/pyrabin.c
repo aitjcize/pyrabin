@@ -25,17 +25,55 @@
 #include <Python.h>
 #include <openssl/sha.h>
 
+#include "utils.h"
 #include "rabin_polynomial.h"
 
 #define READ_BUF_SIZE 1048576
 
 static PyObject* RabinError;
 
+extern PyTypeObject RabinType;
+
 extern uint64_t rabin_polynomial_prime;
 extern unsigned int rabin_sliding_window_size;
 extern unsigned int rabin_polynomial_max_block_size;
 extern unsigned int rabin_polynomial_min_block_size;
 extern unsigned int rabin_polynomial_average_block_size;
+
+static PyObject* set_prime(PyObject* self, PyObject* args)
+{
+  if (!PyArg_ParseTuple(args, "K", &rabin_polynomial_prime)) {
+    return NULL;
+  }
+}
+
+static PyObject* set_window_size(PyObject* self, PyObject* args)
+{
+  if (!PyArg_ParseTuple(args, "I", &rabin_sliding_window_size)) {
+    return NULL;
+  }
+}
+
+static PyObject* set_max_block_size(PyObject* self, PyObject* args)
+{
+  if (!PyArg_ParseTuple(args, "I", &rabin_polynomial_max_block_size)) {
+    return NULL;
+  }
+}
+
+static PyObject* set_min_block_size(PyObject* self, PyObject* args)
+{
+  if (!PyArg_ParseTuple(args, "I", &rabin_polynomial_min_block_size)) {
+    return NULL;
+  }
+}
+
+static PyObject* set_average_block_size(PyObject* self, PyObject* args)
+{
+  if (!PyArg_ParseTuple(args, "I", &rabin_polynomial_average_block_size)) {
+    return NULL;
+  }
+}
 
 static void to_hex_digest(char* digest, char* hex_digest) {
   int i, j;
@@ -54,13 +92,8 @@ static void to_hex_digest(char* digest, char* hex_digest) {
 static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
     PyObject *keywds) {
   const char *filename;
-  static char *kwlist[] = {"filename", "prime", "window_size", "max_block_size",
-    "min_block_size", "avg_block_size", NULL};
 
-  if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|KIIII", kwlist,
-     &filename, &rabin_polynomial_prime, &rabin_sliding_window_size,
-     &rabin_polynomial_max_block_size, &rabin_polynomial_min_block_size,
-     &rabin_polynomial_average_block_size)) {
+  if (!PyArg_ParseTuple(args, "s", &filename)) {
     return NULL;
   }
 
@@ -74,33 +107,10 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
     PyErr_SetString(RabinError, "get_file_rabin_polys()");
     return NULL;
   }
-
-  PyObject* list = NULL;
-  PyObject* tuple = NULL;
-  PyObject* node = NULL;
-
-  if (!(list = PyList_New(0))) {
-    return NULL;
-  }
-
-  struct rabin_polynomial* curr = head;
-  while (curr) {
-    if (!(tuple = PyTuple_New(3))) {
-      return NULL;
-    }
-    node = Py_BuildValue("K", curr->start);
-    PyTuple_SetItem(tuple, 0, node);
-    node = Py_BuildValue("K", curr->length);
-    PyTuple_SetItem(tuple, 1, node);
-    node = Py_BuildValue("K", curr->polynomial);
-    PyTuple_SetItem(tuple, 2, node);
-    PyList_Append(list, tuple);
-    Py_DECREF(tuple);
-    curr = curr->next_polynomial;
-  }
-
-  free_rabin_fingerprint_list(head);
   fclose(fp);
+
+  PyObject* list = rabin_polynomial_to_PyList(head);
+  free_rabin_fingerprint_list(head);
 
   return list;
 }
@@ -108,13 +118,7 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args,
 static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args,
     PyObject *keywds) {
   const char *filename;
-  static char *kwlist[] = {"filename", "prime", "window_size", "max_block_size",
-    "min_block_size", "avg_block_size", NULL};
-
-  if (!PyArg_ParseTupleAndKeywords(args, keywds, "s|KIIII", kwlist,
-     &filename, &rabin_polynomial_prime, &rabin_sliding_window_size,
-     &rabin_polynomial_max_block_size, &rabin_polynomial_min_block_size,
-     &rabin_polynomial_average_block_size)) {
+  if (!PyArg_ParseTuple(args, "s", &filename)) {
     return NULL;
   }
 
@@ -191,6 +195,7 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args,
     rename(outfile, hex_digest);
 
     if (!(tuple = PyTuple_New(4))) {
+      Py_DECREF(list);
       return NULL;
     }
     node = Py_BuildValue("K", curr->start);
@@ -214,15 +219,32 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args,
 }
 
 static PyMethodDef PyRabinMethods[] = {
-  {"get_file_fingerprints", get_file_fingerprints,
+  {"get_file_fingerprints", (PyCFunction)get_file_fingerprints,
     METH_VARARGS | METH_KEYWORDS, "Get Rabin fingerprint of a file"},
-  {"split_file_by_fingerprints", split_file_by_fingerprints,
+  {"split_file_by_fingerprints", (PyCFunction)split_file_by_fingerprints,
     METH_VARARGS | METH_KEYWORDS, "Split a file by fingerprints"},
   {NULL, NULL, 0, NULL}     
 };
 
 
 PyMODINIT_FUNC initrabin(void) {
-  (void) Py_InitModule("rabin", PyRabinMethods);
+  PyObject* m = Py_InitModule("rabin", PyRabinMethods);
+  if (m == NULL) {
+    return;
+  }
+
+  // Initialize defaults
+  initialize_rabin_polynomial_defaults();
+
+  // Initialize rabin.Rabin
+  if (PyType_Ready(&RabinType) < 0) {
+    fprintf(stderr, "Invalid PyTypeObject `RabinType'\n");
+    return;
+  }
+
+  Py_INCREF(&RabinType);
+  PyModule_AddObject(m, "Rabin", (PyObject*)&RabinType);
+
+  // Initialize RabinError
   RabinError = PyErr_NewException("rabin.error", NULL, NULL);
 }
