@@ -52,6 +52,15 @@ Rabin_init(Rabin* self, PyObject* args, PyObject* kwds)
   return 0;
 }
 
+static int
+Rabin_dealloc(Rabin* self)
+{
+  free_rabin_fingerprint_list(self->block->head);
+  free(self->block);
+  Py_XDECREF(self->callback);
+  return 0;
+}
+
 static PyObject*
 Rabin_register(Rabin* self, PyObject* args)
 {
@@ -94,8 +103,8 @@ static PyObject*
 Rabin_clear(Rabin* self)
 {
   if (self->block != NULL) {
-    free(self->block);
     free_rabin_fingerprint_list(self->block->head);
+    free(self->block);
     self->block = NULL;
   }
   Py_INCREF(Py_None);
@@ -130,7 +139,7 @@ PyTypeObject RabinType = {
   "rabin.Rabin",             /*tp_name*/
   sizeof(Rabin),             /*tp_basicsize*/
   0,                         /*tp_itemsize*/
-  0,                         /*tp_dealloc*/
+  (destructor)Rabin_dealloc, /*tp_dealloc*/
   0,                         /*tp_print*/
   0,                         /*tp_getattr*/
   0,                         /*tp_setattr*/
