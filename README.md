@@ -1,5 +1,5 @@
 # PyRabin
-A python module for generating [rabin fingerprints](http://en.wikipedia.org/wiki/Rabin_fingerprint) of a file.
+A python module for generating [rabin fingerprints](http://en.wikipedia.org/wiki/Rabin_fingerprint).
 
 The C extension implementation is based on [rabin-fingerprint-c](https://code.google.com/p/rabin-fingerprint-c/) with some bugs fixed.
 
