@@ -83,8 +83,10 @@ struct rab_block_info {
   uint64_t curr_roll_offset;
 };
 
+typedef void (*block_reached_func)(struct rabin_polynomial* result, void* user);
+
 int initialize_rabin_polynomial_defaults();
-struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block);
+struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block, block_reached_func callback, void* user);
 
 void change_average_rabin_block_size(int increment_mode);
 int write_rabin_fingerprints_to_binary_file(FILE *file, struct rabin_polynomial *head);

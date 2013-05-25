@@ -30,12 +30,46 @@
 typedef struct {
   PyObject_HEAD
   struct rab_block_info* block;
+  PyObject* callback;
 } Rabin;
 
-static int Rabin_init(Rabin* self, PyObject* args, PyObject* kwds)
+void __block_reached(struct rabin_polynomial* result, Rabin* self)
+{
+  PyObject* arglist = NULL;
+  arglist = Py_BuildValue("(K,K,K)", result->start, result->length,
+      result->polynomial);
+  PyObject_CallObject(self->callback, arglist);
+  Py_DECREF(arglist);
+}
+
+static int
+Rabin_init(Rabin* self, PyObject* args, PyObject* kwds)
 {
   self->block = NULL;
+  self->callback = NULL;
   return 0;
+}
+
+static PyObject*
+Rabin_register(Rabin* self, PyObject* args)
+{
+  const char* src_data;
+  int src_len;
+  PyObject* temp;
+
+  if (!PyArg_ParseTuple(args, "O:callback", &temp)) {
+    if (!PyCallable_Check(temp)) {
+      PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+      return NULL;
+    }
+    return NULL;
+  }
+  Py_XINCREF(temp);
+  Py_XDECREF(self->callback);
+  self->callback = temp;
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 static PyObject*
@@ -47,8 +81,10 @@ Rabin_update(Rabin* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "s#", &src_data, &src_len)) {
     return NULL;
   }
-  self->block = read_rabin_block((void*)src_data, src_len, self->block);
+  self->block = read_rabin_block((void*)src_data, src_len, self->block,
+      (block_reached_func)__block_reached, self);
 
+  Py_INCREF(Py_None);
   return Py_None;
 }
 
@@ -60,6 +96,7 @@ Rabin_clear(Rabin* self)
     free_rabin_fingerprint_list(self->block->head);
     self->block = NULL;
   }
+  Py_INCREF(Py_None);
   return Py_None;
 }
 
@@ -70,6 +107,9 @@ Rabin_fingerprints(Rabin* self)
 }
 
 static PyMethodDef Rabin_methods[] = {
+  {"register", (PyCFunction)Rabin_register, METH_VARARGS,
+    "Register a callback for calling when a block is reached"
+  },
   {"update", (PyCFunction)Rabin_update, METH_VARARGS,
     "Update Rabin fingerprint list by adding a block of data"
   },

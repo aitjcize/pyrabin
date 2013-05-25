@@ -8,7 +8,11 @@ set_min_block_size(1024)
 set_max_block_size(2048)
 set_average_block_size(1024)
 
+def block_reached(start, length, fingerprint):
+    print '(%s, %s, %s)' % (start, length, fingerprint)
+
 r = Rabin()
+r.register(block_reached)
 
 with open(TARGET, 'r') as f:
     data = f.read()

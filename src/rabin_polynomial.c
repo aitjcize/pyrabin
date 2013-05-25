@@ -244,7 +244,7 @@ struct rabin_polynomial *get_file_rabin_polys(FILE *file_to_read) {
   ssize_t bytes_read = fread(file_data, 1, RAB_FILE_READ_BUF_SIZE, file_to_read);
 
   while (bytes_read != 0) {
-    block = read_rabin_block(file_data, bytes_read, block);
+    block = read_rabin_block(file_data, bytes_read, block, NULL, NULL);
     bytes_read = fread(file_data, 1, RAB_FILE_READ_BUF_SIZE, file_to_read);
   }
 
@@ -296,7 +296,7 @@ struct rab_block_info *init_empty_block() {
  * Since most of the time we will not end on a border, the function returns
  * a block struct, which keeps track of the current blocksum and rolling checksum
  */
-struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block) {
+struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_block_info *cur_block, block_reached_func callback, void* user) {
   struct rab_block_info *block;
 
   if (cur_block == NULL) {
@@ -335,6 +335,9 @@ struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_bloc
     //If we hit our special value or reached the max win size create a new block
     if ((block->tail->length >= rabin_polynomial_min_block_size && (block->cur_roll_checksum % rabin_polynomial_average_block_size) == rabin_polynomial_prime) || block->tail->length == rabin_polynomial_max_block_size) {
       block->tail->start = block->total_bytes_read - block->tail->length;
+      if (callback != NULL) {
+        callback(block->tail, user);
+      }
       struct rabin_polynomial *new_poly = gen_new_polynomial(NULL, 0, 0, 0);
       block->tail->next_polynomial = new_poly;
       block->tail = new_poly;

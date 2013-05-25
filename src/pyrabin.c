@@ -45,6 +45,7 @@ static PyObject* set_prime(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "K", &rabin_polynomial_prime)) {
     return NULL;
   }
+  Py_INCREF(Py_None);
   return Py_None;
 }
 
@@ -53,6 +54,7 @@ static PyObject* set_window_size(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "I", &rabin_sliding_window_size)) {
     return NULL;
   }
+  Py_INCREF(Py_None);
   return Py_None;
 }
 
@@ -61,6 +63,7 @@ static PyObject* set_max_block_size(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "I", &rabin_polynomial_max_block_size)) {
     return NULL;
   }
+  Py_INCREF(Py_None);
   return Py_None;
 }
 
@@ -69,6 +72,7 @@ static PyObject* set_min_block_size(PyObject* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "I", &rabin_polynomial_min_block_size)) {
     return NULL;
   }
+  Py_INCREF(Py_None);
   return Py_None;
 }
 
@@ -85,6 +89,8 @@ static PyObject* set_average_block_size(PyObject* self, PyObject* args)
     return NULL;
   }
   rabin_polynomial_average_block_size = prev;
+
+  Py_INCREF(Py_None);
   return Py_None;
 }
 
