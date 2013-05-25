@@ -35,11 +35,13 @@ typedef struct {
 
 void __block_reached(struct rabin_polynomial* result, Rabin* self)
 {
-  PyObject* arglist = NULL;
-  arglist = Py_BuildValue("(K,K,K)", result->start, result->length,
-      result->polynomial);
-  PyObject_CallObject(self->callback, arglist);
-  Py_DECREF(arglist);
+  if (self->callback) {
+    PyObject* arglist = NULL;
+    arglist = Py_BuildValue("(K,K,K)", result->start, result->length,
+        result->polynomial);
+    PyObject_CallObject(self->callback, arglist);
+    Py_DECREF(arglist);
+  }
 }
 
 static int
