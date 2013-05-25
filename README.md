@@ -27,6 +27,9 @@ The C extension implementation is based on [rabin-fingerprint-c](https://code.go
   - The default filename is sha1sum of the chunk with '.blk' suffix.
 
 ### class Rabin
+* `register(callback)`
+  - Register a callback for calling when a block is reached
+  - THe callback is called with three parameters: (offset, length, fingerprint)
 * `update(data)`
   - Update Rabin fingerprint list by adding a block of data
 * `clear()`
