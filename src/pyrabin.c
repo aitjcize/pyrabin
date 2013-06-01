@@ -124,8 +124,7 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args)
 
   struct rabin_polynomial* head = get_file_rabin_polys(fp);
   if (head == NULL) {
-    PyErr_SetString(RabinError, "get_file_rabin_polys()");
-    return NULL;
+    return PyList_New(0);
   }
   fclose(fp);
 

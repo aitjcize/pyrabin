@@ -248,10 +248,14 @@ struct rabin_polynomial *get_file_rabin_polys(FILE *file_to_read) {
     bytes_read = fread(file_data, 1, RAB_FILE_READ_BUF_SIZE, file_to_read);
   }
 
-  free(file_data);
-  struct rabin_polynomial *head = block->head;
-  free(block);
-  return head;
+  if (block) {
+    free(file_data);
+    struct rabin_polynomial *head = block->head;
+    free(block);
+    return head;
+  } else { // file has not content
+    return NULL;
+  }
 }
 
 /**
