@@ -60,7 +60,7 @@ extern unsigned int rabin_polynomial_average_block_size;
  */
 struct rabin_polynomial {
   uint64_t start;
-  uint16_t length;
+  uint32_t length;
   uint64_t polynomial;
   struct rabin_polynomial *next_polynomial;
 };
