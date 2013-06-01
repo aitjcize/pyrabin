@@ -26,7 +26,6 @@ PyObject* rabin_polynomial_to_PyList(struct rabin_polynomial* head)
 {
   PyObject* list = NULL;
   PyObject* tuple = NULL;
-  PyObject* node = NULL;
 
   if (!(list = PyList_New(0))) {
     return NULL;
@@ -38,18 +37,11 @@ PyObject* rabin_polynomial_to_PyList(struct rabin_polynomial* head)
       curr = curr->next_polynomial;
       continue;
     }
-    if (!(tuple = PyTuple_New(3))) {
-      Py_DECREF(list);
-      return NULL;
-    }
-    node = Py_BuildValue("K", curr->start);
-    PyTuple_SetItem(tuple, 0, node);
-    node = Py_BuildValue("K", curr->length);
-    PyTuple_SetItem(tuple, 1, node);
-    node = Py_BuildValue("K", curr->polynomial);
-    PyTuple_SetItem(tuple, 2, node);
+    tuple = Py_BuildValue("(K,K,K)", curr->start, curr->length,
+        curr->polynomial);
     PyList_Append(list, tuple);
     Py_DECREF(tuple);
+
     curr = curr->next_polynomial;
   }
 

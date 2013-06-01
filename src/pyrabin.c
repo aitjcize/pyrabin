@@ -163,7 +163,6 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
 
   PyObject* list = NULL;
   PyObject* tuple = NULL;
-  PyObject* node = NULL;
 
   if (!(list = PyList_New(0))) {
     return NULL;
@@ -213,18 +212,8 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
     strncat(hex_digest, ".blk", SHA_DIGEST_LENGTH * 2 + 5);
     rename(outfile, hex_digest);
 
-    if (!(tuple = PyTuple_New(4))) {
-      Py_DECREF(list);
-      return NULL;
-    }
-    node = Py_BuildValue("K", curr->start);
-    PyTuple_SetItem(tuple, 0, node);
-    node = Py_BuildValue("K", curr->length);
-    PyTuple_SetItem(tuple, 1, node);
-    node = Py_BuildValue("K", curr->polynomial);
-    PyTuple_SetItem(tuple, 2, node);
-    node = Py_BuildValue("s", hex_digest);
-    PyTuple_SetItem(tuple, 3, node);
+    tuple = Py_BuildValue("(K,K,K,s)", curr->start, curr->length,
+        curr->polynomial, hex_digest);
     PyList_Append(list, tuple);
     Py_DECREF(tuple);
 
