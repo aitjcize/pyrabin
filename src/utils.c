@@ -34,6 +34,10 @@ PyObject* rabin_polynomial_to_PyList(struct rabin_polynomial* head)
 
   struct rabin_polynomial* curr = head;
   while (curr) {
+    if (curr->length == 0) {
+      curr = curr->next_polynomial;
+      continue;
+    }
     if (!(tuple = PyTuple_New(3))) {
       Py_DECREF(list);
       return NULL;
