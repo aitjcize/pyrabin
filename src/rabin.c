@@ -55,7 +55,8 @@ Rabin_init(Rabin* self, PyObject* args, PyObject* kwds)
 static int
 Rabin_dealloc(Rabin* self)
 {
-  free_rabin_fingerprint_list(self->block->head);
+  if (self->block != NULL)
+    free_rabin_fingerprint_list(self->block->head);
   free(self->block);
   Py_XDECREF(self->callback);
   return 0;
