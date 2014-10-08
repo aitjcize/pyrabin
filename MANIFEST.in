@@ -1,0 +1,4 @@
+include src/*.h
+include README.md
+include build.sh
+include test/*
