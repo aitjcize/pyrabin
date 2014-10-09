@@ -212,8 +212,9 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
     strncat(hex_digest, ".blk", SHA_DIGEST_LENGTH * 2 + 5);
     rename(outfile, hex_digest);
 
-    tuple = Py_BuildValue("(K,K,K,s)", curr->start, curr->length,
+    tuple = Py_BuildValue("KiKs", curr->start, curr->length, 
         curr->polynomial, hex_digest);
+    /* PyObject_Print(tuple, stdout, 0); printf("\n"); */
     PyList_Append(list, tuple);
     Py_DECREF(tuple);
 
