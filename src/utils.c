@@ -37,7 +37,7 @@ PyObject* rabin_polynomial_to_PyList(struct rabin_polynomial* head)
       curr = curr->next_polynomial;
       continue;
     }
-    tuple = Py_BuildValue("(K,K,K)", curr->start, curr->length,
+    tuple = Py_BuildValue("KiK", curr->start, curr->length,
         curr->polynomial);
     PyList_Append(list, tuple);
     Py_DECREF(tuple);
