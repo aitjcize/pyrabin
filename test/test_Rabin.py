@@ -20,10 +20,10 @@ r = Rabin()
 r.register(block_reached)
 
 with open(TARGET, 'r') as f:
-	data = f.read()
-	half = len(data) / 2
-	r.update(data[:half])
-	r.update(data[half:])
+    data = f.read()
+    half = len(data) / 2
+    r.update(data[:half])
+    r.update(data[half:])
 
 partial = r.fingerprints()
 gold = get_file_fingerprints(TARGET)
@@ -31,18 +31,18 @@ gold = get_file_fingerprints(TARGET)
 assert len(gold) == len(partial) == len(reached)
 
 for i in range(len(gold)):
-	try:
-		gs,gl,gp = gold[i]
-		ps,pl,pp = partial[i]
-		rs,rl,rp = reached[i]
-		assert gs == ps == rs
-		assert gl == pl == rl
-		assert gp == pp == rp
-	except:
-		print 'gold   ', gold[i]
-		print 'partial', partial[i]
-		print 'reached', reached[i]
-		raise
+    try:
+        gs,gl,gp = gold[i]
+        ps,pl,pp = partial[i]
+        rs,rl,rp = reached[i]
+        assert gs == ps == rs
+        assert gl == pl == rl
+        assert gp == pp == rp
+    except:
+        print 'gold   ', gold[i]
+        print 'partial', partial[i]
+        print 'reached', reached[i]
+        raise
 
 assert partial == gold == reached
 
