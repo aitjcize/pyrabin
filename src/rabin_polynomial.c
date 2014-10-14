@@ -307,17 +307,8 @@ struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_bloc
     block = init_empty_block();
     if (block == NULL)
       return NULL;
-  }
-
-  else {
+  } else {
     block = cur_block;
-  }
-  //We ended on a border, gen a new tail
-  if (block->current_poly_finished) {
-    struct rabin_polynomial *new_poly = gen_new_polynomial(NULL, 0, 0, 0);
-    block->tail->next_polynomial = new_poly;
-    block->tail = new_poly;
-    block->current_poly_finished = 0;
   }
 
   ssize_t i;
@@ -340,6 +331,12 @@ struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_bloc
     if ((block->tail->length >= rabin_polynomial_min_block_size && (block->cur_roll_checksum % rabin_polynomial_average_block_size) == rabin_polynomial_prime) || block->tail->length == rabin_polynomial_max_block_size) {
       block->tail->start = block->total_bytes_read - block->tail->length;
       if (callback != NULL) {
+        /* printf("callback i %d start %lld length %d end %lld\n", 
+                i, 
+                block->tail->start, 
+                block->tail->length, 
+                block->tail->start + block->tail->length - 1);
+        */
         callback(block->tail, user);
       }
       struct rabin_polynomial *new_poly = gen_new_polynomial(NULL, 0, 0, 0);
@@ -351,6 +348,18 @@ struct rab_block_info *read_rabin_block(void *buf, ssize_t size, struct rab_bloc
     }
   }
   block->tail->start = block->total_bytes_read - block->tail->length;
+
+  // printf("size %d\n", size);
+  // printf("total_bytes_read %lld\n", block->total_bytes_read);
+  // printf("current_poly_finished %d\n", block->current_poly_finished);
+  
+  //We ended on a border, gen a new tail
+  if (block->current_poly_finished) {
+      struct rabin_polynomial *new_poly = gen_new_polynomial(NULL, 0, 0, 0);
+      block->tail->next_polynomial = new_poly;
+      block->tail = new_poly;
+      block->current_poly_finished = 0;
+  }
 
   return block;
 }

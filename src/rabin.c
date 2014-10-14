@@ -37,7 +37,7 @@ void __block_reached(struct rabin_polynomial* result, Rabin* self)
 {
   if (self->callback) {
     PyObject* arglist = NULL;
-    arglist = Py_BuildValue("(K,K,K)", result->start, result->length,
+    arglist = Py_BuildValue("KiK", result->start, result->length,
         result->polynomial);
     PyObject_CallObject(self->callback, arglist);
     Py_DECREF(arglist);
@@ -115,6 +115,15 @@ Rabin_clear(Rabin* self)
 static PyObject*
 Rabin_fingerprints(Rabin* self)
 {
+  // Call the callback for the last block -- this is an ugly hack,
+  // should be taken care of somehow in read_rabin_block(), but
+  // neither Rabin_update() nor read_rabin_block() have any idea when
+  // the last block has been added via update().
+  if (self->block->current_poly_finished == 0 && 
+          self->block->tail->length > 0) {
+      __block_reached(self->block->tail, self);
+  }
+
   return rabin_polynomial_to_PyList(self->block->head);
 }
 
