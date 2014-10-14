@@ -7,8 +7,12 @@ import sys
 
 from rabin import Rabin, get_file_fingerprints, set_min_block_size, set_max_block_size, set_average_block_size
 
-stream_count = int(sys.argv[1]) # 100
-seed = int(sys.argv[2]) # $RANDOM
+if len(sys.argv) == 3:
+    stream_count,seed = map(int, sys.argv[1:]) # 100
+    seed = int(sys.argv[2]) # $RANDOM
+else:
+    stream_count = 10
+    seed = random.random()
 print 'seed', seed
 
 stream_bs = 1024 * 1024 
