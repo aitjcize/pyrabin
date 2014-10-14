@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import os
+import random
+
 from rabin import Rabin, get_file_fingerprints, set_min_block_size, set_max_block_size, set_average_block_size
 
 TARGET = 'test.bin'
 os.system("dd if=/dev/urandom of=%s bs=1024 count=100" % TARGET)
-
+random.seed(open(TARGET, 'r').read(1024))
 
 set_min_block_size(1024)
 set_max_block_size(2048)
@@ -20,10 +22,12 @@ r = Rabin()
 r.register(block_reached)
 
 with open(TARGET, 'r') as f:
-    data = f.read()
-    half = len(data) / 2
-    r.update(data[:half])
-    r.update(data[half:])
+    while True:
+        size = random.randint(1,os.path.getsize(TARGET))
+        data = f.read(size)
+        if len(data) == 0:
+            break
+        r.update(data)
 
 partial = r.fingerprints()
 gold = get_file_fingerprints(TARGET)
