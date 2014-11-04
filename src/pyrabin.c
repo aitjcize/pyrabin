@@ -117,7 +117,7 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args)
     return NULL;
   }
 
-  FILE* fp = fopen(filename, "r");
+  FILE* fp = fopen(filename, "rb");
   if (!fp) {
     return PyErr_SetFromErrnoWithFilename(RabinError, filename);
   }
@@ -141,7 +141,7 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
     return NULL;
   }
 
-  FILE* fp = fopen(filename, "r");
+  FILE* fp = fopen(filename, "rb");
   if (!fp) {
     return PyErr_SetFromErrnoWithFilename(RabinError, filename);
   }
@@ -177,7 +177,7 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
     /* Save chunk to temporarily file */
     snprintf(outfile, BUFSIZ, ".%x.tmp", curr->polynomial);
     SHA1_Init(&ctx);
-    FILE* ofp = fopen(outfile, "w");
+    FILE* ofp = fopen(outfile, "wb");
     if (!ofp) {
       fclose(fp);
       return PyErr_SetFromErrnoWithFilename(RabinError, filename);
@@ -244,7 +244,7 @@ static PyMethodDef PyRabinMethods[] = {
     METH_VARARGS, "Get Rabin fingerprint of a file"},
   {"split_file_by_fingerprints", (PyCFunction)split_file_by_fingerprints,
     METH_VARARGS, "Split a file by fingerprints"},
-  {NULL, NULL, 0, NULL}     
+  {NULL, NULL, 0, NULL}
 };
 
 
