@@ -2,7 +2,7 @@ from distutils.core import setup, Extension
 
 setup(
     name="PyRabin",
-    version="0.4",
+    version="0.5",
     description = 'A python for generating rabin fingerprints.',
     author = 'Wei-Ning Huang (AZ)',
     author_email = 'aitjcize@gmail.com',
