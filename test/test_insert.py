@@ -12,7 +12,7 @@ Mb = 1024*1024
 
 os.system("dd if=/dev/urandom of=%s bs=%d count=%d" % (
     TARGET, Mb, filesizeM))
-random.seed(open(TARGET, 'r').read(1024))
+random.seed(open(TARGET, 'rb').read(1024))
 
 set_min_block_size(1024)
 set_max_block_size(2048)
@@ -21,10 +21,10 @@ set_average_block_size(1024)
 r = Rabin()
 
 before = get_file_fingerprints(TARGET)
-f = open(TARGET, 'r+')
-data = f.read(filesizeM/2 * Mb)
+f = open(TARGET, 'rb+')
+data = f.read(int(filesizeM/2 * Mb))
 r.update(data)
-r.update('x')
+r.update(b'x')
 data = f.read()
 r.update(data)
 after = r.fingerprints()
@@ -40,11 +40,11 @@ for i in range(len(before)):
         assert bl == al
         assert bp == ap
     except:
-        print 'before', before[i]
-        print 'after', after[i]
+        print('before', before[i])
+        print('after', after[i])
         diffcount += 1
 
 assert diffcount < 10, diffcount
 
 os.unlink(TARGET)
-print 'passed'
+print('passed')

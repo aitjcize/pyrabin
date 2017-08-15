@@ -22,17 +22,17 @@ os.chdir('before')
 os.system("dd if=/dev/urandom of=%s bs=%d count=%d" % (
     beforefn, Mb, filesizeM))
 split_file_by_fingerprints(beforefn)
-beforefh = open(beforefn, 'r')
+beforefh = open(beforefn, 'rb')
 os.chdir('..')
 
 
 os.chdir('after')
-beforefh.seek(filesizeM/2 * Mb)
+beforefh.seek(int(filesizeM/2 * Mb))
 data = beforefh.read()
-afterfh = open(afterfn, 'w')
+afterfh = open(afterfn, 'wb')
 afterfh.write(data)
 beforefh.seek(0)
-data = beforefh.read(filesizeM/2 * Mb)
+data = beforefh.read(int(filesizeM/2 * Mb))
 afterfh.write(data)
 afterfh.close()
 split_file_by_fingerprints(afterfn)
@@ -59,13 +59,13 @@ diffcount = 0
 for entry in db.values():
     if len(entry) != 2:
         diffcount += 1
-        print entry, len(entry)
+        print(entry, len(entry))
 
-print len(db), diffcount
+print(len(db), diffcount)
 assert diffcount < len(before)*.01, diffcount
 
 os.system('rm -rf before after')
-print 'passed'
+print('passed')
 
 '''
 before.sort()
@@ -82,14 +82,14 @@ for i in range(len(before)):
         assert bl == al
         assert bp == ap
     except:
-        print 'before', before[i]
-        print 'after', after[i]
+        print('before', before[i])
+        print('after', after[i])
         diffcount += 1
 
 blocks = len(before)
-print blocks, diffcount
+print(blocks, diffcount)
 assert diffcount < blocks*.8, diffcount
 
 os.system('rm -rf before after')
-print 'passed'
+print('passed')
 '''

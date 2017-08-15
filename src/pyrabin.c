@@ -30,7 +30,16 @@
 
 #define READ_BUF_SIZE 1048576
 
-static PyObject* RabinError;
+struct module_state {
+    PyObject *RabinError;
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#else
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+#endif
 
 extern PyTypeObject RabinType;
 
@@ -84,7 +93,8 @@ static PyObject* set_average_block_size(PyObject* self, PyObject* args)
   }
   if (prev < rabin_polynomial_min_block_size ||
       prev > rabin_polynomial_max_block_size) {
-    PyErr_SetString(RabinError,
+    struct module_state *st = GETSTATE(self);
+    PyErr_SetString(st->RabinError,
         "average block size should between min and max block size");
     return NULL;
   }
@@ -119,7 +129,8 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args)
 
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
-    return PyErr_SetFromErrnoWithFilename(RabinError, filename);
+    struct module_state *st = GETSTATE(self);
+    return PyErr_SetFromErrnoWithFilename(st->RabinError, filename);
   }
 
   struct rabin_polynomial* head = get_file_rabin_polys(fp);
@@ -136,6 +147,7 @@ static PyObject* get_file_fingerprints(PyObject* self, PyObject* args)
 
 static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
 {
+  struct module_state *st = GETSTATE(self);
   const char *filename;
   if (!PyArg_ParseTuple(args, "s", &filename)) {
     return NULL;
@@ -143,12 +155,12 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
 
   FILE* fp = fopen(filename, "rb");
   if (!fp) {
-    return PyErr_SetFromErrnoWithFilename(RabinError, filename);
+    return PyErr_SetFromErrnoWithFilename(st->RabinError, filename);
   }
 
   struct rabin_polynomial* head = get_file_rabin_polys(fp);
   if (head == NULL) {
-    PyErr_SetString(RabinError, "get_file_rabin_polys()");
+    PyErr_SetString(st->RabinError, "get_file_rabin_polys()");
     return NULL;
   }
 
@@ -171,16 +183,16 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
   while (curr) {
     if ((offset = fseek(fp, curr->start, SEEK_SET) == -1)) {
       fclose(fp);
-      return PyErr_SetFromErrnoWithFilename(RabinError, filename);
+      return PyErr_SetFromErrnoWithFilename(st->RabinError, filename);
     }
 
     /* Save chunk to temporarily file */
-    snprintf(outfile, BUFSIZ, ".%x.tmp", curr->polynomial);
+    snprintf(outfile, BUFSIZ, ".%llx.tmp", (unsigned long long) curr->polynomial);
     SHA1_Init(&ctx);
     FILE* ofp = fopen(outfile, "wb");
     if (!ofp) {
       fclose(fp);
-      return PyErr_SetFromErrnoWithFilename(RabinError, filename);
+      return PyErr_SetFromErrnoWithFilename(st->RabinError, filename);
     }
 
     size_t remain_read = curr->length;
@@ -198,7 +210,7 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
         if (bytes_written == 0 && ferror(ofp)) {
           fclose(fp);
           fclose(ofp);
-          return PyErr_SetFromErrnoWithFilename(RabinError, outfile);
+          return PyErr_SetFromErrnoWithFilename(st->RabinError, outfile);
         }
         total_written += bytes_written;
       } while (total_written != bytes_read);
@@ -207,7 +219,7 @@ static PyObject* split_file_by_fingerprints(PyObject* self, PyObject* args)
     fclose(ofp);
 
     /* Rename chunk using SHA-1 sum as filename */
-    SHA1_Final(digest, &ctx);
+    SHA1_Final((unsigned char *) digest, &ctx);
     to_hex_digest(digest, hex_digest);
     strncat(hex_digest, ".blk", SHA_DIGEST_LENGTH * 2 + 5);
     rename(outfile, hex_digest);
@@ -247,12 +259,52 @@ static PyMethodDef PyRabinMethods[] = {
   {NULL, NULL, 0, NULL}
 };
 
+#if PY_MAJOR_VERSION >= 3
 
-PyMODINIT_FUNC initrabin(void) {
-  PyObject* m = Py_InitModule("rabin", PyRabinMethods);
-  if (m == NULL) {
-    return;
-  }
+static int rabin_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->RabinError);
+    return 0;
+}
+
+static int rabin_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->RabinError);
+    return 0;
+}
+
+
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "rabin",
+        NULL,
+        sizeof(struct module_state),
+        PyRabinMethods,
+        NULL,
+        rabin_traverse,
+        rabin_clear,
+        NULL
+};
+
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit_rabin(void)
+
+#else
+#define INITERROR return
+
+void
+initrabin(void)
+#endif
+{
+#if PY_MAJOR_VERSION >= 3
+  PyObject *module = PyModule_Create(&moduledef);
+#else
+  PyObject *module = Py_InitModule("rabin", PyRabinMethods);
+#endif
+  if (module == NULL)
+    INITERROR;
+
+  struct module_state *st = GETSTATE(module);
 
   // Initialize defaults
   initialize_rabin_polynomial_defaults();
@@ -260,12 +312,20 @@ PyMODINIT_FUNC initrabin(void) {
   // Initialize rabin.Rabin
   if (PyType_Ready(&RabinType) < 0) {
     fprintf(stderr, "Invalid PyTypeObject `RabinType'\n");
-    return;
+    INITERROR;
   }
 
   Py_INCREF(&RabinType);
-  PyModule_AddObject(m, "Rabin", (PyObject*)&RabinType);
+  PyModule_AddObject(module, "Rabin", (PyObject*)&RabinType);
 
   // Initialize RabinError
-  RabinError = PyErr_NewException("rabin.error", NULL, NULL);
+  st->RabinError = PyErr_NewException("rabin.error", NULL, NULL);
+  if (st->RabinError == NULL) {
+    Py_DECREF(module);
+    INITERROR;
+  }
+
+#if PY_MAJOR_VERSION >= 3
+  return module;
+#endif
 }

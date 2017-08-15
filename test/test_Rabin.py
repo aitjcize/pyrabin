@@ -7,7 +7,7 @@ from rabin import Rabin, get_file_fingerprints, set_min_block_size, set_max_bloc
 
 TARGET = 'test.bin'
 os.system("dd if=/dev/urandom of=%s bs=1024 count=100" % TARGET)
-random.seed(open(TARGET, 'r').read(1024))
+random.seed(open(TARGET, 'rb').read(1024))
 
 set_min_block_size(1024)
 set_max_block_size(2048)
@@ -21,7 +21,7 @@ def block_reached(start, length, fingerprint):
 r = Rabin()
 r.register(block_reached)
 
-with open(TARGET, 'r') as f:
+with open(TARGET, 'rb') as f:
     while True:
         size = random.randint(1,os.path.getsize(TARGET))
         data = f.read(size)
@@ -43,12 +43,12 @@ for i in range(len(gold)):
         assert gl == pl == rl
         assert gp == pp == rp
     except:
-        print 'gold   ', gold[i]
-        print 'partial', partial[i]
-        print 'reached', reached[i]
+        print('gold   ', gold[i])
+        print('partial', partial[i])
+        print('reached', reached[i])
         raise
 
 assert partial == gold == reached
 
 os.unlink(TARGET)
-print 'passed'
+print('passed')
