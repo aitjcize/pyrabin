@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import os
 import random
 
@@ -15,7 +17,7 @@ set_average_block_size(1024)
 
 reached = []
 def block_reached(start, length, fingerprint):
-    # print '(%s, %s, %s)' % (start, length, fingerprint)
+    # print('(%s, %s, %s)' % (start, length, fingerprint))
     reached.append((start, length, fingerprint))
 
 r = Rabin()
