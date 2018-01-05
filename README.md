@@ -21,9 +21,9 @@ The C extension implementation is based on [rabin-fingerprint-c](https://code.go
 * `set_average_block_size(integer)`
   - Set Rabin polynomial average block size, average is 8K bytes.
 * `get_file_fingerprints(filename)`
-  - Returns a list of tupple, each tuple represents (offset, length, fingerprint) 
+  - Returns a list of tuples, each tuple represents (offset, length, fingerprint) 
 * `split_file_by_fingerprints(filename)`
-  - Returns a list of tupple, each tuple represents (offset, length, fingerprint, filename).
+  - Returns a list of tuples, each tuple represents (offset, length, fingerprint, filename).
   - The default filename is sha1sum of the chunk with '.blk' suffix.
 
 ### class Rabin
